@@ -18,7 +18,7 @@
     "vite": "^4.4.5"
   },
   "dependencies": {
-    "@tldraw/tldraw": "^2.0.0-alpha.14",
+    "@tldraw/tldraw": "^2.0.0-alpha.17",
     "daisyui": "^3.5.1",
     "firebase": "^10.1.0",
     "react": "^18.2.0",

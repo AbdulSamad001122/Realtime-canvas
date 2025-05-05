@@ -71,8 +71,18 @@ export function FixedDrawingCanvas({ initialTitle = 'Untitled Drawing' }: Drawin
                 console.log('Loading document directly');
                 loadSnapshot(editorRef.current.store, {
                   document: content,
-                  // We don't have session data, so we'll use an empty object
-                  session: {}
+                  // We need to provide a valid session state with required properties
+                  // Use a complete type assertion to bypass type checking
+                  session: {
+                    version: 1,
+                    currentPageId: 'page:page',
+                    isFocusMode: false,
+                    exportBackground: true,
+                    isDebugMode: false,
+                    isToolLocked: false,
+                    isGridMode: false,
+                    pageStates: []
+                  } as any
                 });
               }
 
@@ -241,12 +251,14 @@ export function FixedDrawingCanvas({ initialTitle = 'Untitled Drawing' }: Drawin
                   console.log('Snapshot from getSnapshot:', snapshot);
 
                   // Check if there are any shapes in the document
-                  if (snapshot.document && snapshot.document.records) {
-                    const shapeRecords = Object.values(snapshot.document.records).filter(
+                  if (snapshot.document) {
+                    // Access the store's shapes safely with type checking
+                    const store = editor.store;
+                    const shapes = store.allRecords().filter(
                       (record: any) => record.typeName === 'shape'
                     );
-                    console.log('Number of shapes in document:', shapeRecords.length);
-                    console.log('Shape records:', shapeRecords);
+                    console.log('Number of shapes in document:', shapes.length);
+                    console.log('Shape records:', shapes);
                   }
 
                   // Try to fetch the drawing from the database
@@ -263,11 +275,21 @@ export function FixedDrawingCanvas({ initialTitle = 'Untitled Drawing' }: Drawin
                         try {
                           const parsedContent = JSON.parse(drawing.content);
                           console.log('Parsed content has document:', !!parsedContent.document);
-                          if (parsedContent.document && parsedContent.document.records) {
-                            const dbShapeRecords = Object.values(parsedContent.document.records).filter(
-                              (record: any) => record.typeName === 'shape'
-                            );
-                            console.log('Number of shapes in database:', dbShapeRecords.length);
+                          if (parsedContent.document) {
+                            // Safely check for shapes in the parsed content
+                            try {
+                              // Try to extract shapes from the parsed content in a type-safe way
+                              const shapes = [];
+                              // Iterate through all keys in the document to find shapes
+                              for (const key in parsedContent.document) {
+                                if (key.startsWith('shape:')) {
+                                  shapes.push(parsedContent.document[key]);
+                                }
+                              }
+                              console.log('Number of shapes in database:', shapes.length);
+                            } catch (e) {
+                              console.error('Error extracting shapes from parsed content:', e);
+                            }
                           }
                         } catch (parseError) {
                           console.error('Error parsing database content:', parseError);
